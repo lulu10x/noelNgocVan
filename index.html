@@ -92,6 +92,14 @@
 
         /* ensure modal header area reserves space for the close button */
         #letter-editor-modal > div { position: relative; padding-right: 40px; }
+
+        /* Gesture guide overlay */
+        #gesture-guide { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 220; pointer-events: auto; background: rgba(0,0,0,0.25); transition: opacity 0.2s ease; opacity: 0; }
+        #gesture-guide-panel { width: 640px; max-width: 92%; background: rgba(10,10,10,0.45); border: 2px solid #d4af37; border-radius: 12px; padding: 20px; color: #fff; backdrop-filter: blur(6px); box-shadow: 0 8px 24px rgba(0,0,0,0.6); position: relative; display:flex; gap:16px; flex-direction: row; align-items: flex-start; }
+        #gesture-guide-panel .guide-left { width: 220px; display:flex; flex-direction:column; gap:12px; align-items:center; justify-content:center; }
+        #gesture-guide-panel .guide-right { flex:1; min-height:150px; }
+        #gesture-guide .close-btn { position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; }
+        #gesture-guide .muted { color: rgba(255,255,255,0.7); font-size:14px; }
     </style>
 
     <script type="importmap">
@@ -123,7 +131,7 @@
     </div>
 
     <div id="wish-control">
-        <button class="music-btn" id="wish-toggle" title="Tâm thư" aria-label="Tâm thư">❤</button>
+        <button class="music-btn" id="wish-toggle" title="Hướng dẫn thao tác" aria-label="Hướng dẫn thao tác">❤</button>
     </div>
 
     <div id="music-control">
@@ -142,6 +150,31 @@
         <div class="letter-paper">
             <div class="letter-close-btn" id="btn-close-letter-mode">×</div>
             <div class="letter-content" id="letter-content-display"></div>
+        </div>
+    </div>
+
+    <!-- Gesture guide overlay (repurposed from heart button) -->
+    <div id="gesture-guide" role="dialog" aria-modal="true" aria-label="Hướng dẫn thao tác">
+        <div id="gesture-guide-panel">
+            <div class="guide-left">
+                <div style="font-size:48px;display:flex;gap:12px;justify-content:center;align-items:center;">
+                    <div title="Chỉ (Point)" style="width:56px;height:56px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.03);">☝️</div>
+                    <div title="Bàn tay mở (Palm)" style="width:56px;height:56px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.03);">✋</div>
+                    <div title="Nắm (Fist)" style="width:56px;height:56px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.03);">🤜</div>
+                </div>
+                <div class="muted">Point • Palm Open • Fist</div>
+            </div>
+            <div class="guide-right">
+                <h3 style="margin-top:0;color:#ffd700;">Hướng dẫn thao tác</h3>
+                <p class="muted">Đưa tay vào camera và thực hiện:</p>
+                <ul style="line-height:1.8;color:#fff;margin-left:16px;">
+                    <li><strong>Point (chỉ):</strong> Chọn ảnh kế tiếp và khóa hướng ảnh.</li>
+                    <li><strong>Palm open (bàn tay mở):</strong> Scatter - đưa các ảnh ra rải rác.</li>
+                    <li><strong>Fist (nắm):</strong> Trở về chế độ Tree.</li>
+                </ul>
+                <p class="muted">Cửa sổ trong suốt; viền đổi màu theo <em>theme</em>.</p>
+            </div>
+            <div class="close-btn" id="btn-close-gesture">×</div>
         </div>
     </div>
 
@@ -553,15 +586,15 @@
             }
             geom.setAttribute('position', new THREE.BufferAttribute(pos,3));
 
-            const mat = new THREE.PointsMaterial({ size: Math.max(0.04, r*0.03), map: createFocusParticleTexture(), transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+            const mat = new THREE.PointsMaterial({ size: Math.max(0.04, r*0.03), map: createFocusParticleTexture(), transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
             const pts = new THREE.Points(geom, mat);
-            pts.renderOrder = 999; // render last
+            pts.renderOrder = -1; // render before photo so photo remains clearly visible
             pts.userData._rotationSpeed = 0.3 + Math.random() * 0.6;
 
             const halo = new THREE.Group();
             halo.add(pts);
             halo.name = 'focusHalo';
-            halo.position.set(0, size.y*0.05, 0);
+            halo.position.set(0, size.y*0.05, -0.03); // slightly behind the photo plane
             photoMesh.add(halo);
             photoMesh.focusHalo = halo;
         }
@@ -579,6 +612,22 @@
                     obj.focusHalo = null;
                 }
             });
+        }
+
+        // Gesture guide open/close helpers
+        function openGestureGuide() {
+            const el = document.getElementById('gesture-guide');
+            const panel = document.getElementById('gesture-guide-panel');
+            if (!el || !panel) return;
+            panel.style.borderColor = (STATE.currentThemeIndex === 0) ? '#d4af37' : '#aaddff';
+            el.style.display = 'flex';
+            // short timeout to trigger CSS opacity transition
+            setTimeout(() => { el.style.opacity = '1'; }, 10);
+        }
+
+        function closeGestureGuide() {
+            const el = document.getElementById('gesture-guide'); if (!el) return;
+            el.style.opacity = '0'; setTimeout(() => { el.style.display = 'none'; }, 220);
         }
 
         function createStarTopper() {
@@ -656,6 +705,10 @@
                 STATE.starMesh.material = isGold ? matLib.starGold : matLib.starIce;
                 STATE.starHaloMesh.material.color.setHex(isGold ? 0xffaa00 : CONFIG.colors.iceBlue);
             }
+
+            // update gesture guide border color to match theme
+            const guidePanel = document.getElementById('gesture-guide-panel');
+            if (guidePanel) guidePanel.style.borderColor = (themeIndex === 0) ? '#d4af37' : '#aaddff';
         }
 
         function addPhotoToScene(texture) {
@@ -807,7 +860,7 @@
 
             // Heart button opens editor too
             const wishBtn = document.getElementById('wish-toggle');
-            if (wishBtn) wishBtn.onclick = (e) => { e.stopPropagation(); openEditor(); };
+            if (wishBtn) wishBtn.onclick = (e) => { e.stopPropagation(); openGestureGuide(); };
 
             // Close (only X) - auto save
             const closeModalBtn = document.getElementById('btn-close-modal');
@@ -1001,6 +1054,19 @@
             }
 
             particleSystem.forEach(p => p.update(dt, STATE.time, STATE.mode, STATE.focusTarget, (STATE.mode === 'FOCUS' ? _invMatrix : null)));
+
+            // rotate and animate any focus halos
+            photoMeshGroup.traverse(obj => {
+                if (obj && obj.focusHalo) {
+                    const halo = obj.focusHalo;
+                    const pts = halo.children.find(c => c.isPoints);
+                    const speed = (pts && pts.userData && pts.userData._rotationSpeed) ? pts.userData._rotationSpeed : 0.5;
+                    halo.rotation.y += speed * dt;
+                    // gentle vertical bob for organic motion
+                    halo.position.y = Math.sin(STATE.time * 2 + halo.id) * 0.02;
+                }
+            });
+
             composer.render();
         }
 
@@ -1041,6 +1107,16 @@
                 // Try to reflect play state when audio ends/plays
                 audioEl.addEventListener('play', () => { isPlaying = true; musicToggle.style.opacity = '1'; });
                 audioEl.addEventListener('pause', () => { isPlaying = false; musicToggle.style.opacity = '0.6'; });
+            }
+
+            // gesture guide close
+            const gestureCloseBtn = document.getElementById('btn-close-gesture');
+            if (gestureCloseBtn) gestureCloseBtn.onclick = (e) => { e.stopPropagation(); closeGestureGuide(); };
+
+            const gestureOverlay = document.getElementById('gesture-guide');
+            if (gestureOverlay) {
+                // clicking outside panel closes the guide
+                gestureOverlay.addEventListener('click', (ev) => { if (ev.target === gestureOverlay) closeGestureGuide(); });
             }
 
             const fsToggle = document.getElementById('fullscreen-toggle');
