@@ -17,8 +17,10 @@
         #ui-layer { position: absolute; width: 100%; height: 100%; z-index: 10; pointer-events: none; background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.3) 100%); }
         
         /* Loader */
-        #loader { position: absolute; width: 100%; height: 100%; background: #000; z-index: 100; display: flex; align-items: center; justify-content: center; transition: opacity 1.2s; pointer-events: none; }
-        .spinner { width: 40px; height: 40px; border: 2px solid rgba(212, 175, 55, 0.1); border-top: 2px solid #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
+        #loader { position: absolute; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 1.2s; pointer-events: auto; }
+        .spinner { width: 48px; height: 48px; border: 3px solid rgba(212, 175, 55, 0.12); border-top: 3px solid #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
+        .loader-msg { margin-top: 14px; color: #d4af37; font-weight: 600; font-size: 16px; letter-spacing: 0.4px; text-align: center; }
+        .loader-camera { margin-top: 8px; color: rgba(255,255,255,0.7); font-size: 13px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
         /* Controls (updated look) */
@@ -123,7 +125,7 @@
 </head>
 
 <body>
-    <div id="loader"><div class="spinner"></div></div>
+    <div id="loader"><div class="spinner"></div><div class="loader-msg">Vân ơi em chờ xíu nhen</div><div class="loader-camera">Đang mở camera...</div></div>
     <div id="canvas-container"></div>
 
     <div id="ui-layer">
@@ -226,7 +228,8 @@
                 autoScanLocal: true,
                 scanCount: 200,
                 extensions: ['jpg','jpeg','png','webp','bmp']
-            }
+            },
+            loaderDuration: 5 // seconds the loader should wait before auto-hiding (or until camera opens)
         }; 
 
         // 2. STATE
@@ -241,7 +244,9 @@
             starMesh: null, starHaloMesh: null,
             letterContent: "Gửi Vân nhen, \n Chúc em một mùa Giáng Sinh thật ấm áp, \n luôn rạng rỡ và hạnh phúc như những ngôi sao kia. \n Mong rằng năm 2026 sắp tới của em sẽ rực rỡ và đầy ắp niềm vui! ✨", 
             letterTyper: null, letterStartTimer: null, letterLastTriggerTime: 0,
-            musicData: null 
+            musicData: null,
+            webcamReady: false, // set true when webcam/video loads
+            loaderHidden: false 
         };
 
         let scene, camera, renderer, composer, clock = new THREE.Clock();
@@ -277,8 +282,49 @@
             try { if (CONFIG.preload && CONFIG.preload.autoScanLocal) scanLocalImages(); } catch (e) { console.warn('scanLocalImages failed', e); }
 
             const loader = document.getElementById('loader');
-            loader.style.opacity = 0;
-            setTimeout(() => loader.remove(), 1200);
+            const loaderCam = document.querySelector('.loader-camera');
+            // start watching for camera readiness or timeout
+            const LOADER = { start: Date.now(), interval: null, hidden: false };
+
+            function tryHideLoader() {
+                if (LOADER.hidden) return;
+                const elapsed = Date.now() - LOADER.start;
+                const waitMs = (CONFIG.loaderDuration || 5) * 1000;
+                if (STATE.webcamReady) {
+                    if (loaderCam) loaderCam.textContent = 'Camera đã mở';
+                }
+                if (STATE.webcamReady || elapsed >= waitMs) {
+                    LOADER.hidden = true;
+                    if (LOADER.interval) clearInterval(LOADER.interval);
+                    // small delay so camera-ready message can show briefly
+                    setTimeout(() => {
+                        loader.style.opacity = 0;
+                        setTimeout(() => { loader.remove(); 
+                            // open gesture guide immediately after loader removed
+                            openGestureGuide();
+                        }, 1200);
+                    }, 600);
+                }
+            }
+
+            LOADER.interval = setInterval(tryHideLoader, 200);
+            // also ensure we hide even if tryHideLoader wasn't triggered (safety)
+            setTimeout(tryHideLoader, (CONFIG.loaderDuration || 5) * 1000 + 100);
+
+            // Attempt to autoplay bundled audio (audio.mp3). If blocked by browser, fall back to first interaction.
+            try {
+                const audioEl = document.getElementById('bg-music');
+                if (!STATE.musicData) {
+                    if (!audioEl.querySelector('source')) audioEl.src = 'audio.mp3';
+                }
+                audioEl.play().catch(err => {
+                    console.warn('Autoplay blocked, will start on first interaction', err);
+                    const startOnInteraction = () => { audioEl.play().catch(()=>{}); document.removeEventListener('click', startOnInteraction); };
+                    document.addEventListener('click', startOnInteraction);
+                });
+            } catch (e) { console.warn(e); }
+
+            animate(); 
 
             // Attempt to autoplay bundled audio (audio.mp3). If blocked by browser, fall back to first interaction.
             try {
@@ -934,6 +980,9 @@
                     document.getElementById('webcam-wrapper').style.height = (120/aspect) + 'px';
                     document.getElementById('webcam-preview').width = video.videoWidth;
                     document.getElementById('webcam-preview').height = video.videoHeight;
+                    // mark webcam ready for loader to hide
+                    STATE.webcamReady = true;
+                    const loaderCam = document.querySelector('.loader-camera'); if (loaderCam) loaderCam.textContent = 'Camera đã mở';
                     predictWebcam(); 
                 });
             }
