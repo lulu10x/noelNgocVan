@@ -5,7 +5,7 @@
     <meta name="copyright" content="Copyright © Huy Hoàng">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Ngọc Vân</title>
-    
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap" rel="stylesheet">
     <style>
 
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Ma+Shan+Zheng&display=swap');
@@ -83,13 +83,13 @@
         /* Letter Modal */
         #letter-editor-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 500px; background: rgba(10, 10, 10, 0.95); border: 1px solid #d4af37; border-radius: 10px; padding: 20px; z-index: 200; display: none; flex-direction: column; gap: 15px; pointer-events: auto; }
         #letter-editor-modal h3 { color: #d4af37; margin: 0; text-align: center; }
-        #letter-text-input { width: 100%; height: 150px; background: rgba(255,255,255,0.05); border: 1px solid #444; color: #fff; padding: 10px; resize: none; outline: none; }
+        #letter-text-input { width: 100%; height: 150px; background: rgba(255,255,255,0.05); border: 1px solid #444; color: #fff; padding: 10px; resize: none; outline: none; font-family: 'Lora', serif; font-size: 16px; line-height: 1.6; }
         .modal-btn-group { display: flex; justify-content: flex-end; gap: 10px; }
 
         /* Letter Display */
         #letter-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 150; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; pointer-events: auto; opacity: 0; transition: opacity 1.5s ease; }
         .letter-paper { height: 80%; aspect-ratio: 3/4; background: rgba(255, 252, 240, 0.15); backdrop-filter: blur(3px); border: 1px solid rgba(255, 255, 255, 0.3); padding: 6vh; box-sizing: border-box; position: relative; display: flex; flex-direction: column; transform: translateY(20px); transition: transform 1.5s ease-out; }
-        .letter-content { font-family: 'Ma Shan Zheng', cursive; font-size: clamp(16px, 2.5vh, 24px); line-height: 1.8; color: rgba(255, 255, 255, 0.9); text-shadow: 0 0 5px rgba(255,215,0, 0.3); white-space: pre-wrap; overflow-y: auto; flex: 1; scroll-behavior: smooth; }
+        .letter-content { font-family: 'Lora', serif; font-style: italic; font-weight: 400; font-size: clamp(18px, 2.8vh, 26px); line-height: 1.9; color: rgba(255, 255, 255, 0.95); text-shadow: 0 1px 6px rgba(0,0,0,0.35); white-space: pre-wrap; overflow-y: auto; flex: 1; scroll-behavior: smooth; padding-right: 6px; }
         
         .letter-content::-webkit-scrollbar { width: 6px; }
         .letter-content::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.3); border-radius: 3px; }
