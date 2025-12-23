@@ -58,6 +58,14 @@
         .music-btn { background: rgba(212, 175, 55, 0.08); border: 1px solid #d4af37; color: #d4af37; padding: 10px; border-radius: 50%; cursor: pointer; width: 50px; height: 50px; display:flex; align-items:center; justify-content:center; transition: all 0.3s; backdrop-filter: blur(5px); font-size: 20px; }
         .music-btn:hover { background: #d4af37; color: #000; box-shadow: 0 0 20px rgba(212,175,55,0.4); }
 
+        /* Theme overrides: when frozen theme is active update button and modal colors */
+        body[data-theme="frozen"] .music-btn { background: rgba(170,221,255,0.06); border: 1px solid #aaddff; color: #aaddff; }
+        body[data-theme="frozen"] .music-btn:hover { background: #aaddff; color: #001; box-shadow: 0 0 20px rgba(170,221,255,0.35); }
+        body[data-theme="frozen"] #letter-editor-modal { border-color: #aaddff; }
+        body[data-theme="frozen"] .letter-close-btn { border-color: rgba(170,221,255,0.35); }
+        body[data-theme="frozen"] .upload-btn { border-color: rgba(170,221,255,0.24); color: #aaddff; }
+        body[data-theme="frozen"] .upload-btn:hover { background: #aaddff; color: #000; box-shadow: 0 0 20px rgba(170,221,255,0.25); }
+
         /* Keep original file inputs hidden (import kept) */
         #import-input { display: none; }
 
@@ -161,8 +169,9 @@
                     <div title="Chỉ (Point)" style="width:56px;height:56px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.03);">☝️</div>
                     <div title="Bàn tay mở (Palm)" style="width:56px;height:56px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.03);">✋</div>
                     <div title="Nắm (Fist)" style="width:56px;height:56px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.03);">🤜</div>
+                    <div title="Đổi theme (V-sign)" style="width:56px;height:56px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.03);">✌️</div>
                 </div>
-                <div class="muted">Point • Palm Open • Fist</div>
+                <div class="muted">Point • Palm Open • Fist • Theme Switch (V)</div>
             </div>
             <div class="guide-right">
                 <h3 style="margin-top:0;color:#ffd700;">Hướng dẫn thao tác</h3>
@@ -171,8 +180,12 @@
                     <li><strong>Point (chỉ):</strong> Chọn ảnh kế tiếp và khóa hướng ảnh.</li>
                     <li><strong>Palm open (bàn tay mở):</strong> Scatter - đưa các ảnh ra rải rác.</li>
                     <li><strong>Fist (nắm):</strong> Trở về chế độ Tree.</li>
+                    <li><strong>V-sign (✌️):</strong> Chuyển đổi theme (Gold ⇄ Frozen).</li>
                 </ul>
-                <p class="muted">Cửa sổ trong suốt; viền đổi màu theo <em>theme</em>.</p>
+                <div style="margin-top:12px;">
+                    <button id="btn-simulate-theme" class="music-btn" title="Thử đổi theme" aria-label="Thử đổi theme" style="width:auto;padding:8px 12px;border-radius:8px;">Thử đổi theme</button>
+                </div>
+                <p class="muted">Cửa sổ trong suốt; viền đổi màu theo <em>theme</em>. (Dùng nút trên để thử thay theme.)</p>
             </div>
             <div class="close-btn" id="btn-close-gesture">×</div>
         </div>
@@ -709,6 +722,8 @@
             // update gesture guide border color to match theme
             const guidePanel = document.getElementById('gesture-guide-panel');
             if (guidePanel) guidePanel.style.borderColor = (themeIndex === 0) ? '#d4af37' : '#aaddff';
+            // set a data attribute on body so CSS can easily switch colors for UI elements
+            document.body.setAttribute('data-theme', isGold ? 'gold' : 'frozen');
         }
 
         function addPhotoToScene(texture) {
@@ -1112,6 +1127,9 @@
             // gesture guide close
             const gestureCloseBtn = document.getElementById('btn-close-gesture');
             if (gestureCloseBtn) gestureCloseBtn.onclick = (e) => { e.stopPropagation(); closeGestureGuide(); };
+
+            const simulateThemeBtn = document.getElementById('btn-simulate-theme');
+            if (simulateThemeBtn) simulateThemeBtn.onclick = (e) => { e.stopPropagation(); switchTheme((STATE.currentThemeIndex+1)%2); };
 
             const gestureOverlay = document.getElementById('gesture-guide');
             if (gestureOverlay) {
