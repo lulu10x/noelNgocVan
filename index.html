@@ -438,18 +438,20 @@
                         const dz = camera.position.z - worldPos.z;
                         const targetY = Math.atan2(dx, dz);
 
-                        // When focused or explicitly locked, snap immediately to a perfectly flat face and keep it locked (no smoothing)
+                        // Compute desired world quaternion so the photo faces camera on the Y axis only (no tilt)
+                        const desiredWorldQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, (this.lockedFacing && typeof this.lockedFacingAngle === 'number') ? this.lockedFacingAngle : targetY, 0, 'YXZ'));
+                        // Convert desired world quaternion into local quaternion relative to this.mesh.parent
+                        const parentWorldQuat = new THREE.Quaternion();
+                        if (this.mesh.parent) this.mesh.parent.getWorldQuaternion(parentWorldQuat);
+                        const localQuat = parentWorldQuat.clone().invert().multiply(desiredWorldQuat);
+
                         if ((mode === 'FOCUS' && focusTargetMesh && this.mesh === focusTargetMesh) || this.lockedFacing) {
-                            this.mesh.rotation.x = 0;
-                            this.mesh.rotation.z = 0;
-                            const lockAngle = (this.lockedFacing && typeof this.lockedFacingAngle === 'number') ? this.lockedFacingAngle : targetY;
-                            this.mesh.rotation.y = lockAngle;
+                            // locked: snap immediately and keep stable
+                            this.mesh.quaternion.copy(localQuat);
                         } else {
-                            // Non-focused photos: smooth the rotation to avoid jitter
+                            // smooth the quaternion to reduce jitter
                             const smooth = Math.min(1, 4 * dt);
-                            this.mesh.rotation.x = 0;
-                            this.mesh.rotation.z = 0;
-                            this.mesh.rotation.y = THREE.MathUtils.lerp(this.mesh.rotation.y, targetY, smooth);
+                            this.mesh.quaternion.slerp(localQuat, smooth);
                         }
                     } catch (e) { /* ignore if camera not ready */ }
                 }
