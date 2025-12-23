@@ -96,6 +96,13 @@
         .cursor::after { content: '|'; animation: blink 1s step-end infinite; }
         @keyframes blink { 50% { opacity: 0; } }
 
+        /* secret button + secret page */
+        .secret-btn { position: absolute; bottom: 20px; right: 20px; width: 44px; height:44px; border-radius:50%; border:1px solid rgba(212,175,55,0.9); background: rgba(0,0,0,0.18); color:#ffd700; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.5); animation: blinkPulse 1.6s infinite; z-index:230; font-size:18px; transition: transform 0.12s ease; }
+        .secret-btn:hover { transform: translateY(-2px); }
+        @keyframes blinkPulse { 0% { transform: scale(1); opacity: 1 } 50% { transform: scale(1.08); opacity: 0.85 } 100% { transform: scale(1); opacity: 1 } }
+
+        .letter-secret { font-family: 'Playfair Display', serif; font-size: clamp(14px, 2.0vh, 20px); line-height: 1.8; color: rgba(255, 255, 255, 0.95); white-space: pre-wrap; overflow-y: auto; flex: 1; display: none; padding-right:6px; scroll-behavior: smooth; }
+
         .letter-close-btn { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); width: 28px; height: 28px; border: 1px solid rgba(255,255,255,0.35); border-radius: 50%; color: rgba(255,255,255,0.95); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.18s ease, border-color 0.18s ease; background: rgba(0,0,0,0.18); z-index: 220; font-size: 14px; line-height: 1; }
         .letter-close-btn:hover { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.95); }
         .letter-close-btn:active { transform: translateY(-50%); }
@@ -160,6 +167,8 @@
         <div class="letter-paper">
             <div class="letter-close-btn" id="btn-close-letter-mode">×</div>
             <div class="letter-content" id="letter-content-display"></div>
+            <div class="letter-secret" id="letter-secret" aria-hidden="true"></div>
+            <button id="secret-btn" class="secret-btn" title="Ấn để đọc thêm" aria-label="Đọc thêm">✦</button>
         </div>
     </div>
 
@@ -939,6 +948,39 @@
 
             // Keep existing overlay close handler as-is
             const closeOverlayBtn = document.getElementById('btn-close-letter-mode'); if (closeOverlayBtn) closeOverlayBtn.onclick = (e) => { e.stopPropagation(); exitLetterMode(); };
+
+            // Secret button: toggles an extra 'page' inside the letter paper with a short message
+            const secretBtn = document.getElementById('secret-btn');
+            const secretDiv = document.getElementById('letter-secret');
+            const displayDiv = document.getElementById('letter-content-display');
+            if (secretBtn && secretDiv) {
+                secretBtn.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    const isVisible = secretDiv.style.display === 'block' || secretDiv.style.display === 'flex';
+                    if (!isVisible) {
+                        // show secret page with simple typer effect
+                        displayDiv.style.display = 'none';
+                        secretDiv.style.display = 'block';
+                        secretDiv.textContent = '';
+                        const secretText = "Mong sau này sẽ được gặp em nhiều hơn nhiều hơn, để hiểu về em nhiều hơn nhiều hơn.";
+                        let si = 0;
+                        if (secretDiv._typer) { clearInterval(secretDiv._typer); secretDiv._typer = null; }
+                        secretDiv._typer = setInterval(() => {
+                            if (si < secretText.length) { secretDiv.textContent += secretText.charAt(si++); secretDiv.scrollTop = secretDiv.scrollHeight; }
+                            else { clearInterval(secretDiv._typer); secretDiv._typer = null; }
+                        }, 35);
+                        secretBtn.title = 'Quay lại';
+                        secretBtn.innerText = '↶';
+                    } else {
+                        // hide secret page and return to main letter (existing typed content preserved)
+                        if (secretDiv._typer) { clearInterval(secretDiv._typer); secretDiv._typer = null; }
+                        secretDiv.style.display = 'none';
+                        displayDiv.style.display = 'block';
+                        secretBtn.title = 'Ấn để đọc thêm';
+                        secretBtn.innerText = '✦';
+                    }
+                });
+            }
         }
 
         function enterLetterMode() {
